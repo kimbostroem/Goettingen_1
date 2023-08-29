@@ -35,7 +35,7 @@ restoredefaultpath;
 
 % add library and subfolders to path
 addpath(genpath('../kbstat'));
-resultsDir = '../Skating_Stats';
+resultsDir = '../Statistics';
 
 %% Global options
 
