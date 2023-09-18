@@ -64,7 +64,7 @@ fpaths = strcat(fdirs, filesep, fnames, fexts);
 
 nFiles = length(fpaths);
 % nFiles = 10;
-fileNr = 1; % init file index to end of already loaded files
+itemNr = 1;
 DataStruct = struct([]);
 for iFile = 1:nFiles
     fpath = fpaths{iFile};
@@ -89,58 +89,72 @@ for iFile = 1:nFiles
         continue
     end
 
-    Filename = fname(1:end-9); % remove 'mvnx_out'
-    DataStruct(fileNr).Filename = string(Filename);
-
-    % load data
-    tmp = load(fpath);
-    fields = fieldnames(tmp);
-    RawData = tmp.(fields{1});
-
-    % Stage
-    stage = sprintf('t%s', stageStr);
-
-    % Task
-    switch taskStr
-        case '1'
-            task = 'walk';
-        case '2'
-            task = 'squat';
-        case '3'
-            task = 'sit';
-        case '4'
-            task = 'stair';
-        otherwise
-            error('Unknown task %s', taskStr);
-    end
-
-    % Trial
-    if isempty(trialStr)
-        trial = 1;
-    else
-        trial = str2double(trialStr(2:end));
-    end
-
-    DataStruct(fileNr).Subject = string(subject);
-    DataStruct(fileNr).Height = RawData.body.general.height;
-    DataStruct(fileNr).Weight = RawData.body.general.weight;
-    % subject properties
-    subjectProps = {'Sex', 'Age', 'BMI', 'Diagnose', 'AffectedSide'};
-    for iProp = 1:length(subjectProps)
-        propName = subjectProps{iProp};
-        propValue = SubjectTable.(propName)(subjectIdx);
-        DataStruct(fileNr).(subjectProps{iProp}) = propValue;
-    end
-    subjectWeight = DataStruct(fileNr).Weight;
-
-    DataStruct(fileNr).Stage = string(stage);
-    DataStruct(fileNr).Task = string(task);
-    DataStruct(fileNr).Trial = trial;
-
     for iJoint = 1:nJoints
         joint = joints{iJoint};
         for iSide = 1:nSides
             side = sides{iSide};
+
+            Filename = fname(1:end-9); % remove 'mvnx_out'
+            DataStruct(itemNr).Filename = string(Filename);
+
+            % load data
+            tmp = load(fpath);
+            fields = fieldnames(tmp);
+            RawData = tmp.(fields{1});
+
+            % Stage
+            stage = sprintf('t%s', stageStr);
+
+            % Task
+            switch taskStr
+                case '1'
+                    task = 'walk';
+                case '2'
+                    task = 'squat';
+                case '3'
+                    task = 'sit';
+                case '4'
+                    task = 'stair';
+                otherwise
+                    error('Unknown task %s', taskStr);
+            end
+
+            % Trial
+            if isempty(trialStr)
+                trial = 1;
+            else
+                trial = str2double(trialStr(2:end));
+            end
+
+            DataStruct(itemNr).Subject = string(subject);
+            DataStruct(itemNr).Height = RawData.body.general.height;
+            DataStruct(itemNr).Weight = RawData.body.general.weight;
+            % subject properties
+            subjectProps = {'Sex', 'Age', 'BMI', 'Diagnose', 'AffectedSide'};
+            for iProp = 1:length(subjectProps)
+                propName = subjectProps{iProp};
+                propValue = SubjectTable.(propName)(subjectIdx);
+                DataStruct(itemNr).(subjectProps{iProp}) = propValue;
+            end
+            subjectWeight = DataStruct(itemNr).Weight;
+            subjectSide = DataStruct(itemNr).AffectedSide;
+            if ismissing(subjectSide) % if no affected side is given (for healthy controls)
+                subjectSide = 'left';
+            end
+
+            DataStruct(itemNr).Stage = string(stage);
+            DataStruct(itemNr).Task = string(task);
+            DataStruct(itemNr).Trial = trial;
+
+            DataStruct(itemNr).Joint = joint;
+            DataStruct(itemNr).Side = side;
+            if strcmp(side, subjectSide)
+                DataStruct(itemNr).RelSide = 'ipsi';
+            else
+                DataStruct(itemNr).RelSide = 'contra';
+            end
+
+            % retrieve data
             jointName = sprintf('%s_%s_joint', side, joint);
             jointIdx = strcmp({RawData.signals.joints.name}, jointName);
             if ~any(jointIdx)
@@ -149,49 +163,29 @@ for iFile = 1:nFiles
                 error('Too many joints with name %s', jointName);
             end
             signal = RawData.signals.joints(jointIdx).dynamic.jointTotalForce.data;
-            
-            depVar = sprintf('%s_%s_maxForce', side, joint);
-            x = vecnorm(signal(:, 1:3), 2, 2);            
-            DataStruct(fileNr).(depVar) = quantile(x, 0.95) / subjectWeight;            
-            depVar = sprintf('%s_%s_medForce', side, joint);
-            x = vecnorm(signal(:, 1:3), 2, 2);            
-            DataStruct(fileNr).(depVar) = quantile(x, 0.5) / subjectWeight;
-            
-            depVar = sprintf('%s_%s_maxForceXY', side, joint);
-            x = vecnorm(signal(:, 1:2), 2, 2);            
-            DataStruct(fileNr).(depVar) = quantile(x, 0.95) / subjectWeight;            
-            depVar = sprintf('%s_%s_medForceXY', side, joint);
-            x = vecnorm(signal(:, 1:2), 2, 2);            
-            DataStruct(fileNr).(depVar) = quantile(x, 0.5) / subjectWeight;
-            
-            depVar = sprintf('%s_%s_maxForceZ', side, joint);
-            x = vecnorm(signal(:, 3), 2, 2);            
-            DataStruct(fileNr).(depVar) = quantile(x, 0.95) / subjectWeight;            
-            depVar = sprintf('%s_%s_medForceZ', side, joint);
-            x = vecnorm(signal(:, 3), 2, 2);            
-            DataStruct(fileNr).(depVar) = quantile(x, 0.5) / subjectWeight;
+
+            % calc dependent variables
+            %
+            depVar = 'maxForce';
+            x = vecnorm(signal(:, 1:3), 2, 2);
+            DataStruct(itemNr).(depVar) = quantile(x, 0.95) / subjectWeight;
+
+            depVar = 'maxForceXY';
+            x = vecnorm(signal(:, 1:2), 2, 2);
+            DataStruct(itemNr).(depVar) = quantile(x, 0.95) / subjectWeight;
+
+            depVar = 'maxForceZ';
+            x = vecnorm(signal(:, 3), 2, 2);
+            DataStruct(itemNr).(depVar) = quantile(x, 0.95) / subjectWeight;
+
+            % increment item index
+            itemNr = itemNr+1;
         end
     end
-
-    % hip to knee ratio
-    for iSide = 1:nSides       
-        hipIdx = strcmp({RawData.signals.joints.name}, [side, '_hip_joint']);
-        kneeIdx = strcmp({RawData.signals.joints.name}, [side, '_knee_joint']);
-        hipSignal = RawData.signals.joints(hipIdx).dynamic.jointTotalForce.data;
-        kneeSignal = RawData.signals.joints(kneeIdx).dynamic.jointTotalForce.data;
-        x = (vecnorm(hipSignal, 2, 2) ./ vecnorm(kneeSignal, 2, 2))';        
-        depVar = [side, '_knee2Hip_maxForceRatio'];
-        DataStruct(fileNr).(depVar) = quantile(x, 0.95);
-        depVar = [side, '_knee2Hip_medForceRatio'];
-        DataStruct(fileNr).(depVar) = quantile(x, 0.5);
-    end
-
 
     % report progress
     fprintf('\t-> %s (%d/%d = %.1f%% in %.3fs)\n', fname, iFile, nFiles, iFile/nFiles*100, toc);
 
-    % increment number of processed files
-    fileNr = fileNr+1;
 end
 
 DataTable = struct2table(DataStruct);
@@ -200,11 +194,11 @@ Measurements.DataTable = DataTable;
 % export Measurements structure to base workspace
 assignin('base', 'Measurements', Measurements);
 
-% save subject table 
+% save subject table
 fprintf('Saving Subject table...\n');
 saveTable(SubjectTable, 'SubjectTable', {'xlsx'}, outDir);
 
-% save Data table 
+% save Data table
 fprintf('Saving Data table...\n');
 saveTable(DataTable, 'DataTable', {'csv', 'xlsx'}, outDir);
 
@@ -212,7 +206,7 @@ saveTable(DataTable, 'DataTable', {'csv', 'xlsx'}, outDir);
 fprintf('Saving Measurements.mat...\n');
 save(fullfile(outDir, 'Measurements.mat'), 'Measurements', '-v7.3');
 
-fprintf('Finished extracting data from %d files in %.3f s\n', fileNr, toc(ticAll));
+fprintf('Finished extracting data from %d files into %d data rows %.3f s\n', nFiles, itemNr, toc(ticAll));
 
 diary off;
 

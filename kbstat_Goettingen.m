@@ -42,21 +42,22 @@ resultsDir = '../Statistics';
 options = struct;
 options.inFile = '../Data_Out/DataTable.csv';
 options.id = 'Subject';
-options.x = 'Stage, Diagnose';
-options.within = 'Stage';
-options.interact = '';
-options.posthocMethod = 'ttest';
+options.x = 'Diagnose, RelSide';
+options.within = 'RelSide';
+options.interact = 'Diagnose, RelSide';
+options.posthocMethod = 'emm';
 options.removeOutliers = 'true';
 options.isRescale = true;
 options.errorBars = 'se';
+options.constraint = 'Stage == "t1"';
 
 %% Analysis of Motor data
 
-depVars = {'left_hip_maxForce', 'left_knee_maxForce'};
+depVars = {'maxForce'};
 depVarUnitss = {'BW'};
 tasks = {'walk', 'squat'};
-% distribution = 'gamma';
-% link = '';
+distribution = 'gamma';
+link = 'log';
 
 optionsOrig = options;
 if isfield(options, 'constraint')
