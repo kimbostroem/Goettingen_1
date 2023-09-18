@@ -42,9 +42,9 @@ resultsDir = '../Statistics';
 options = struct;
 options.inFile = '../Data_Out/DataTable.csv';
 options.id = 'Subject';
-options.x = 'Diagnose, RelSide';
-options.within = 'RelSide';
-options.interact = 'Diagnose, RelSide';
+options.x = 'Diagnose, RelSide, Task, Joint';
+options.within = 'RelSide, Task, Joint';
+options.interact = 'Diagnose, RelSide, Task, Joint';
 options.posthocMethod = 'emm';
 options.removeOutliers = 'true';
 options.isRescale = true;
@@ -53,9 +53,10 @@ options.constraint = 'Stage == t1';
 
 %% Analysis of Motor data
 
-depVars = {'maxForce', 'maxForceXY', 'maxForceZ'};
+% depVars = {'maxForce', 'maxForceXY', 'maxForceZ'};
+depVars = {'maxForce'};
 depVarUnitss = {'BW'};
-tasks = {'walk', 'squat'};
+% tasks = {'walk', 'squat'};
 distribution = 'gamma';
 link = 'log';
 
@@ -72,27 +73,33 @@ for iVar = 1:length(depVars)
     else
         depVarUnits = depVarUnitss{iVar};
     end
+
+    options.y = depVar;
+    options.yUnits = depVarUnits;
+    options.outDir = sprintf('%s/%s', resultsDir, depVar);
+    kbstat(options);
+    options = optionsOrig;
     
-    for iTask = 1:length(tasks)
-        task = tasks{iTask};
-        if ~isempty(task)
-            options.y = depVar;
-            if ~isempty(constraintOrig)
-                options.constraint = sprintf('%s & Task == %s', constraintOrig, task);
-            else
-                options.constraint = sprintf('Task == %s', task);
-            end
-            options.title = sprintf('%s %s', task, depVar);
-            options.outDir = sprintf('%s/%s_%s', resultsDir, task, depVar);
-        else
-            options.y = depVar;
-            options.outDir = sprintf('%s/%s', resultsDir, depVar);
-        end
-        options.yUnits = depVarUnits;
-
-        % options.formula = sprintf('%s ~ 1 + Diagnose * RelSide + (1|Subject) + (1|RelSide)', depVar);
-
-        kbstat(options);
-        options = optionsOrig;
-    end
+    % for iTask = 1:length(tasks)
+    %     task = tasks{iTask};
+    %     if ~isempty(task)
+    %         options.y = depVar;
+    %         if ~isempty(constraintOrig)
+    %             options.constraint = sprintf('%s & Task == %s', constraintOrig, task);
+    %         else
+    %             options.constraint = sprintf('Task == %s', task);
+    %         end
+    %         options.title = sprintf('%s %s', task, depVar);
+    %         options.outDir = sprintf('%s/%s_%s', resultsDir, task, depVar);
+    %     else
+    %         options.y = depVar;
+    %         options.outDir = sprintf('%s/%s', resultsDir, depVar);
+    %     end
+    %     options.yUnits = depVarUnits;
+    % 
+    %     % options.formula = sprintf('%s ~ 1 + Diagnose * RelSide + (1|Subject) + (1|RelSide)', depVar);
+    % 
+    %     kbstat(options);
+    %     options = optionsOrig;
+    % end
 end
