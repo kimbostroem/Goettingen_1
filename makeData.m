@@ -125,7 +125,7 @@ for iFile = 1:nFiles
     DataStruct(fileNr).Height = RawData.body.general.height;
     DataStruct(fileNr).Weight = RawData.body.general.weight;
     % subject properties
-    subjectProps = {'Sex', 'Age', 'BMI', 'Diagnose'};
+    subjectProps = {'Sex', 'Age', 'BMI', 'Diagnose', 'AffectedSide'};
     for iProp = 1:length(subjectProps)
         propName = subjectProps{iProp};
         propValue = SubjectTable.(propName)(subjectIdx);
