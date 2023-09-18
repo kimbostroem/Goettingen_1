@@ -49,11 +49,11 @@ options.posthocMethod = 'emm';
 options.removeOutliers = 'true';
 options.isRescale = true;
 options.errorBars = 'se';
-options.constraint = 'Stage == "t1"';
+options.constraint = 'Stage == t1';
 
 %% Analysis of Motor data
 
-depVars = {'maxForce'};
+depVars = {'maxForce', 'maxForceXY', 'maxForceZ'};
 depVarUnitss = {'BW'};
 tasks = {'walk', 'squat'};
 distribution = 'gamma';
@@ -67,7 +67,12 @@ else
 end
 for iVar = 1:length(depVars)
     depVar = depVars{iVar};
-    depVarUnits = depVarUnitss{iVar};
+    if length(depVarUnitss) == 1
+        depVarUnits = depVarUnitss{1};
+    else
+        depVarUnits = depVarUnitss{iVar};
+    end
+    
     for iTask = 1:length(tasks)
         task = tasks{iTask};
         if ~isempty(task)
@@ -84,6 +89,9 @@ for iVar = 1:length(depVars)
             options.outDir = sprintf('%s/%s', resultsDir, depVar);
         end
         options.yUnits = depVarUnits;
+
+        % options.formula = sprintf('%s ~ 1 + Diagnose * RelSide + (1|Subject) + (1|RelSide)', depVar);
+
         kbstat(options);
         options = optionsOrig;
     end
