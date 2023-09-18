@@ -45,7 +45,7 @@ options.id = 'Subject';
 options.x = 'Diagnose, RelSide, Task, Joint';
 options.within = 'RelSide, Task, Joint';
 options.interact = 'Diagnose, RelSide, Task, Joint';
-options.posthocMethod = 'emm';
+options.posthocMethod = 'ttest';
 options.removeOutliers = 'true';
 options.isRescale = true;
 options.errorBars = 'se';
@@ -53,8 +53,8 @@ options.constraint = 'Stage == t1';
 
 %% Analysis of Motor data
 
-% depVars = {'maxForce', 'maxForceXY', 'maxForceZ'};
-depVars = {'maxForce'};
+depVars = {'maxForce', 'maxForceXY', 'maxForceZ'};
+% depVars = {'maxForce'};
 depVarUnitss = {'BW'};
 % tasks = {'walk', 'squat'};
 distribution = 'gamma';
