@@ -45,8 +45,7 @@ options.id = 'Subject';
 options.x = 'Diagnose, RelSide, Task, Joint';
 options.within = 'RelSide, Task, Joint';
 options.interact = 'Diagnose, RelSide, Task, Joint';
-options.posthocMethod = 'ttest';
-options.removeOutliers = 'true';
+options.posthocMethod = 'emm';
 options.isRescale = true;
 options.errorBars = 'se';
 options.constraint = 'Stage == t1';
@@ -56,9 +55,8 @@ options.constraint = 'Stage == t1';
 depVars = {'maxForce', 'maxForceXY', 'maxForceZ'};
 % depVars = {'maxForce'};
 depVarUnitss = {'BW'};
-% tasks = {'walk', 'squat'};
-distribution = 'gamma';
-link = 'log';
+distributions = {'gamma'};
+links = {-1};
 
 optionsOrig = options;
 if isfield(options, 'constraint')
@@ -69,37 +67,23 @@ end
 for iVar = 1:length(depVars)
     depVar = depVars{iVar};
     if length(depVarUnitss) == 1
-        depVarUnits = depVarUnitss{1};
+        options.yUnits = depVarUnitss{1};
     else
-        depVarUnits = depVarUnitss{iVar};
+        options.yUnits = depVarUnitss{iVar};
+    end
+    if exist('distributions', 'var') && length(distributions) == 1
+        options.distribution = distributions{1};
+    elseif exist('distributions', 'var')
+        options.distribution = distributions{iVar};
+    end
+    if exist('links', 'var') && length(links) == 1
+        options.link = links{1};
+    elseif exist('links', 'var')
+        options.link = links{iVar};
     end
 
     options.y = depVar;
-    options.yUnits = depVarUnits;
     options.outDir = sprintf('%s/%s', resultsDir, depVar);
     kbstat(options);
     options = optionsOrig;
-    
-    % for iTask = 1:length(tasks)
-    %     task = tasks{iTask};
-    %     if ~isempty(task)
-    %         options.y = depVar;
-    %         if ~isempty(constraintOrig)
-    %             options.constraint = sprintf('%s & Task == %s', constraintOrig, task);
-    %         else
-    %             options.constraint = sprintf('Task == %s', task);
-    %         end
-    %         options.title = sprintf('%s %s', task, depVar);
-    %         options.outDir = sprintf('%s/%s_%s', resultsDir, task, depVar);
-    %     else
-    %         options.y = depVar;
-    %         options.outDir = sprintf('%s/%s', resultsDir, depVar);
-    %     end
-    %     options.yUnits = depVarUnits;
-    % 
-    %     % options.formula = sprintf('%s ~ 1 + Diagnose * RelSide + (1|Subject) + (1|RelSide)', depVar);
-    % 
-    %     kbstat(options);
-    %     options = optionsOrig;
-    % end
 end
