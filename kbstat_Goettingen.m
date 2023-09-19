@@ -13,14 +13,14 @@
 %       link            Link function used for the GLM fit.
 %                       OPTIONAL, default depends on chosen distribution.
 %                       Possible values:
-%                       'identity'	    g(mu) = mu.             Default for Normal distribution.
-%                       'log'	        g(mu) = log(mu).        Default for Poisson, Gamma, and InverseGaussian.
-%                       'logit'	        g(mu) = log(mu/(1-mu))  Default for Binomial distribution.
+%                       'identity'	    g(mu) = mu.             Default for Normal distribution
+%                       'log'	        g(mu) = log(mu).        Default for Poisson
+%                       'logit'	        g(mu) = log(mu/(1-mu))  Default for Binomial distribution
 %                       'loglog'	    g(mu) = log(-log(mu))
 %                       'probit'	    g(mu) = norminv(mu)
 %                       'comploglog'	g(mu) = log(-log(1-mu))
-%                       'reciprocal'	g(mu) = mu.^(-1)
-%                       Scalar p	    g(mu) = mu.^p           Canonical for Gamma (p = -1) and InverseGaussian (p= -2)
+%                       'reciprocal'	g(mu) = mu.^(-1)        Default for Gamma 
+%                       Scalar p	    g(mu) = mu.^p           Default for InverseGaussian (p= -2)
 
 %% Init
 
@@ -56,7 +56,6 @@ depVars = {'maxForce', 'maxForceXY', 'maxForceZ'};
 % depVars = {'maxForce'};
 depVarUnitss = {'BW'};
 distributions = {'gamma'};
-links = {-1};
 
 optionsOrig = options;
 if isfield(options, 'constraint')
