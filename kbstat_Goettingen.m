@@ -46,6 +46,7 @@ options.x = 'Diagnose, RelSide, Task, Joint';
 options.within = 'RelSide, Task, Joint';
 options.interact = 'Diagnose, RelSide, Task, Joint';
 options.posthocMethod = 'emm';
+% options.fitMethod = 'REMPL';
 options.isRescale = true;
 options.errorBars = 'se';
 options.constraint = 'Stage == t1';
@@ -56,10 +57,38 @@ depVars = {
     'maxForce'
     'maxForceXY'
     'maxForceZ'
+    'maxForceKneeHip'
+    'maxForceKneeHipXY'
+    'maxForceKneeHipZ'
     };
 % depVars = {'maxForce'};
-depVarUnitss = {'BW'};
-distributions = {'gamma'};
+depVarUnitss = {
+    'BW'
+    'BW'
+    'BW'
+    ''
+    ''
+    ''
+    };
+distributions = {
+    'gamma'
+    'gamma'
+    'gamma'
+    'gamma'
+    'gamma'
+    'gamma'
+    };
+
+% links = {
+%     % ''
+%     % ''
+%     % ''
+%     'log'
+%     'log'
+%     'log'
+%     };
+
+% options.randomSlopes = false;
 
 optionsOrig = options;
 if isfield(options, 'constraint')
@@ -68,25 +97,49 @@ else
     constraintOrig = '';
 end
 for iVar = 1:length(depVars)
-    depVar = depVars{iVar};
+    depVar = depVars{iVar};    
+
     if length(depVarUnitss) == 1
         options.yUnits = depVarUnitss{1};
     else
         options.yUnits = depVarUnitss{iVar};
     end
+
     if exist('distributions', 'var') && length(distributions) == 1
         options.distribution = distributions{1};
     elseif exist('distributions', 'var')
         options.distribution = distributions{iVar};
     end
+
     if exist('links', 'var') && length(links) == 1
         options.link = links{1};
     elseif exist('links', 'var')
         options.link = links{iVar};
     end
 
-    options.y = depVar;
-    options.outDir = sprintf('%s/%s', resultsDir, depVar);
+    if contains(depVar, 'kneeHip', 'IgnoreCase', true)
+        if ~isempty(constraintOrig)
+            options.constraint = sprintf('%s & Joint == kneeHip', constraintOrig);
+        else
+            options.constraint = sprintf('Joint == kneeHip');
+        end
+        options.x = 'Diagnose, RelSide, Task';
+        options.within = 'RelSide, Task';
+        options.interact = 'Diagnose, RelSide, Task';
+        options.y = strrep(depVar, 'KneeHip', '');
+        options.title = depVar;
+        options.outDir = sprintf('%s/%s', resultsDir, depVar);
+    else
+        if ~isempty(constraintOrig)
+            options.constraint = sprintf('%s & Joint ~= kneeHip', constraintOrig);
+        else
+            options.constraint = sprintf('Joint ~= kneeHip');
+        end        
+        options.y = depVar;
+        options.outDir = sprintf('%s/%s', resultsDir, depVar);
+    end
+
     kbstat(options);
+    % reset options to original state
     options = optionsOrig;
 end
