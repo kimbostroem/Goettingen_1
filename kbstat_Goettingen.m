@@ -52,7 +52,11 @@ options.constraint = 'Stage == t1';
 
 %% Analysis of Motor data
 
-depVars = {'maxForce', 'maxForceXY', 'maxForceZ'};
+depVars = {
+    'maxForce'
+    'maxForceXY'
+    'maxForceZ'
+    };
 % depVars = {'maxForce'};
 depVarUnitss = {'BW'};
 distributions = {'gamma'};
