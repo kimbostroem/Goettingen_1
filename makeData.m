@@ -43,7 +43,7 @@ SubjectTable.WhyExcluded = [];
 subjects = cellstr(SubjectTable.Subject);
 Measurements.SubjectTable = SubjectTable;
 
-joints = {'hip', 'knee', 'kneeHip'};
+joints = {'hip', 'knee'};
 sides = {'left', 'right'};
 nJoints = length(joints);
 nSides = length(sides);
@@ -111,10 +111,6 @@ for iFile = 1:nFiles
                     task = 'walk';
                 case '2'
                     task = 'squat';
-                case '3'
-                    task = 'sit';
-                case '4'
-                    task = 'stair';
                 otherwise
                     error('Unknown task %s', taskStr);
             end
@@ -136,7 +132,7 @@ for iFile = 1:nFiles
                 propValue = SubjectTable.(propName)(subjectIdx);
                 DataStruct(itemNr).(subjectProps{iProp}) = propValue;
             end
-            subjectWeight = DataStruct(itemNr).Weight;
+            subjectWeightForce = DataStruct(itemNr).Weight * 9.81;
             subjectSide = DataStruct(itemNr).AffectedSide;
             if ismissing(subjectSide) % if no affected side is given (for healthy controls)
                 subjectSide = 'left';
@@ -154,65 +150,23 @@ for iFile = 1:nFiles
                 DataStruct(itemNr).RelSide = 'contra';
             end
 
-            switch joint
-                case {'kneeHip'} % calc knee to hip force ratio
-
-                    % retrieve hip data
-                    jointName = sprintf('%s_hip_joint', side);
-                    jointIdx = strcmp({RawData.signals.joints.name}, jointName);
-                    if ~any(jointIdx)
-                        error('No such joint %s', jointName);
-                    elseif sum(jointIdx) > 1
-                        error('Too many joints with name %s', jointName);
-                    end
-                    signalHip = RawData.signals.joints(jointIdx).dynamic.jointTotalForce.data;
-
-                    % retrieve knee data
-                    jointName = sprintf('%s_knee_joint', side);
-                    jointIdx = strcmp({RawData.signals.joints.name}, jointName);
-                    if ~any(jointIdx)
-                        error('No such joint %s', jointName);
-                    elseif sum(jointIdx) > 1
-                        error('Too many joints with name %s', jointName);
-                    end
-                    signalKnee = RawData.signals.joints(jointIdx).dynamic.jointTotalForce.data;
-
-                    depVar = 'maxForce';
-                    x = vecnorm(signalKnee(:, 1:3), 2, 2) ./ vecnorm(signalHip(:, 1:3), 2, 2);
-                    DataStruct(itemNr).(depVar) = quantile(x, 0.95);
-
-                    depVar = 'maxForceXY';
-                    x = vecnorm(signalKnee(:, 1:2), 2, 2) ./ vecnorm(signalHip(:, 1:2), 2, 2);
-                    DataStruct(itemNr).(depVar) = quantile(x, 0.95);
-
-                    depVar = 'maxForceZ';
-                    x = vecnorm(signalKnee(:, 3), 2, 2) ./ vecnorm(signalHip(:, 3), 2, 2);
-                    DataStruct(itemNr).(depVar) = quantile(x, 0.95);
-
-                otherwise % calc joint force
-
-                    % retrieve joint data
-                    jointName = sprintf('%s_%s_joint', side, joint);
-                    jointIdx = strcmp({RawData.signals.joints.name}, jointName);
-                    if ~any(jointIdx)
-                        error('No such joint %s', jointName);
-                    elseif sum(jointIdx) > 1
-                        error('Too many joints with name %s', jointName);
-                    end
-                    signal = RawData.signals.joints(jointIdx).dynamic.jointTotalForce.data;
-
-                    depVar = 'maxForce';
-                    x = vecnorm(signal(:, 1:3), 2, 2);
-                    DataStruct(itemNr).(depVar) = quantile(x, 0.95) / subjectWeight;
-
-                    depVar = 'maxForceXY';
-                    x = vecnorm(signal(:, 1:2), 2, 2);
-                    DataStruct(itemNr).(depVar) = quantile(x, 0.95) / subjectWeight;
-
-                    depVar = 'maxForceZ';
-                    x = vecnorm(signal(:, 3), 2, 2);
-                    DataStruct(itemNr).(depVar) = quantile(x, 0.95) / subjectWeight;
+            % retrieve joint data
+            jointName = sprintf('%s_%s_joint', side, joint);
+            jointIdx = strcmp({RawData.signals.joints.name}, jointName);
+            if ~any(jointIdx)
+                error('No such joint %s', jointName);
+            elseif sum(jointIdx) > 1
+                error('Too many joints with name %s', jointName);
             end
+            signal = RawData.signals.joints(jointIdx).dynamic.jointTotalForce.data;
+
+            depVar = 'maxForce';
+            x = vecnorm(signal(:, 1:3), 2, 2);
+            DataStruct(itemNr).(depVar) = quantile(x, 0.95) / subjectWeightForce;
+
+            depVar = 'maxForceXY';
+            x = vecnorm(signal(:, 1:2), 2, 2);
+            DataStruct(itemNr).(depVar) = quantile(x, 0.95) / subjectWeightForce;
 
             % increment item index
             itemNr = itemNr+1;
@@ -236,7 +190,7 @@ saveTable(SubjectTable, 'SubjectTable', {'xlsx'}, outDir);
 
 % save Data table
 fprintf('Saving Data table...\n');
-saveTable(DataTable, 'DataTable', {'csv', 'xlsx'}, outDir);
+saveTable(DataTable, 'DataTable', {'csv'}, outDir);
 
 % save Measurements structure to MAT file
 fprintf('Saving Measurements.mat...\n');
