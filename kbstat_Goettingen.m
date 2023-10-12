@@ -19,7 +19,7 @@
 %                       'loglog'	    g(mu) = log(-log(mu))
 %                       'probit'	    g(mu) = norminv(mu)
 %                       'comploglog'	g(mu) = log(-log(1-mu))
-%                       'reciprocal'	g(mu) = mu.^(-1)        Default for Gamma 
+%                       'reciprocal'	g(mu) = mu.^(-1)        Default for Gamma
 %                       Scalar p	    g(mu) = mu.^p           Default for InverseGaussian (p= -2)
 
 %% Init
@@ -45,50 +45,27 @@ options.id = 'Subject';
 options.x = 'Diagnose, RelSide, Task, Joint';
 options.within = 'RelSide, Task, Joint';
 options.interact = 'Diagnose, RelSide, Task, Joint';
-options.posthocMethod = 'emm';
-% options.fitMethod = 'REMPL';
-options.isRescale = true;
-options.errorBars = 'se';
-options.constraint = 'Stage == t1';
+options.removeOutliers = 'true';
+options.showVarNames = 3;
+options.constraint = 'Joint ~= kneeHip & Stage == t1';
+options.separateMulti = 'true';
 
 %% Analysis of Motor data
 
 depVars = {
     'maxForce'
     'maxForceXY'
-    'maxForceZ'
-    'maxForceKneeHip'
-    'maxForceKneeHipXY'
-    'maxForceKneeHipZ'
     };
 % depVars = {'maxForce'};
+depVarLabels = {
+    'Force'
+    };
 depVarUnitss = {
     'BW'
-    'BW'
-    'BW'
-    ''
-    ''
-    ''
     };
 distributions = {
     'gamma'
-    'gamma'
-    'gamma'
-    'gamma'
-    'gamma'
-    'gamma'
     };
-
-% links = {
-%     % ''
-%     % ''
-%     % ''
-%     'log'
-%     'log'
-%     'log'
-%     };
-
-% options.randomSlopes = false;
 
 optionsOrig = options;
 if isfield(options, 'constraint')
@@ -96,50 +73,79 @@ if isfield(options, 'constraint')
 else
     constraintOrig = '';
 end
-for iVar = 1:length(depVars)
-    depVar = depVars{iVar};    
 
-    if length(depVarUnitss) == 1
-        options.yUnits = depVarUnitss{1};
-    else
-        options.yUnits = depVarUnitss{iVar};
-    end
+%% Analyze multivariate
 
-    if exist('distributions', 'var') && length(distributions) == 1
-        options.distribution = distributions{1};
-    elseif exist('distributions', 'var')
-        options.distribution = distributions{iVar};
-    end
-
-    if exist('links', 'var') && length(links) == 1
-        options.link = links{1};
-    elseif exist('links', 'var')
-        options.link = links{iVar};
-    end
-
-    if contains(depVar, 'kneeHip', 'IgnoreCase', true)
-        if ~isempty(constraintOrig)
-            options.constraint = sprintf('%s & Joint == kneeHip', constraintOrig);
-        else
-            options.constraint = sprintf('Joint == kneeHip');
-        end
-        options.x = 'Diagnose, RelSide, Task';
-        options.within = 'RelSide, Task';
-        options.interact = 'Diagnose, RelSide, Task';
-        options.y = strrep(depVar, 'KneeHip', '');
-        options.title = depVar;
-        options.outDir = sprintf('%s/%s', resultsDir, depVar);
-    else
-        if ~isempty(constraintOrig)
-            options.constraint = sprintf('%s & Joint ~= kneeHip', constraintOrig);
-        else
-            options.constraint = sprintf('Joint ~= kneeHip');
-        end        
-        options.y = depVar;
-        options.outDir = sprintf('%s/%s', resultsDir, depVar);
-    end
-
-    kbstat(options);
-    % reset options to original state
-    options = optionsOrig;
+if exist('depVarLabels', 'var') && length(depVarLabels) == 1
+    options.yLabel = depVarLabels{1};
+elseif exist('depVarLabels', 'var')
+    options.yLabel = depVarLabels{iVar};
 end
+
+if exist('depVarUnitss', 'var') && length(depVarUnitss) == 1
+    options.yUnits = depVarUnitss{1};
+elseif exist('depVarUnitss', 'var')
+    options.yUnits = depVarUnitss{iVar};
+end
+
+if exist('distributions', 'var') && length(distributions) == 1
+    options.distribution = distributions{1};
+elseif exist('distributions', 'var')
+    options.distribution = distributions{iVar};
+end
+
+if exist('links', 'var') && length(links) == 1
+    options.link = links{1};
+elseif exist('links', 'var')
+    options.link = links{iVar};
+end
+
+options.y = depVars;
+options.outDir = sprintf('%s', resultsDir);
+
+kbstat(options);
+% reset options to original state
+options = optionsOrig;
+
+% %% Analyze separate univariate 
+% 
+% for iVar = 1:length(depVars)
+%     depVar = depVars{iVar};
+% 
+%     if length(depVarLabels) == 1
+%         options.yLabel = depVarLabels{1};
+%     else
+%         options.yLabel = depVarLabels{iVar};
+%     end
+% 
+%     if length(depVarUnitss) == 1
+%         options.yUnits = depVarUnitss{1};
+%     else
+%         options.yUnits = depVarUnitss{iVar};
+%     end
+% 
+%     if exist('distributions', 'var') && length(distributions) == 1
+%         options.distribution = distributions{1};
+%     elseif exist('distributions', 'var')
+%         options.distribution = distributions{iVar};
+%     end
+%     if exist('links', 'var') && length(links) == 1
+%         options.link = links{1};
+%     elseif exist('links', 'var')
+%         options.link = links{iVar};
+%     end
+% 
+%     if ~isempty(constraintOrig)
+%         options.constraint = sprintf('%s & Stage == t1', constraintOrig);
+%     else
+%         options.constraint = sprintf('Stage == t1');
+%     end
+% 
+%     options.y = depVar;
+%     options.outDir = sprintf('%s/%s', resultsDir, depVar);
+% 
+% 
+%     kbstat(options);
+%     % reset options to original state
+%     options = optionsOrig;
+% end
