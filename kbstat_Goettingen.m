@@ -48,8 +48,8 @@ options.within = 'RelSide, Task, Joint';
 options.interact = 'Diagnose, RelSide, Task, Joint';
 options.fitMethod = 'REMPL';
 % options.posthocMethod = 'utest';
-options.outlierMethod = 'auto';
-options.removeOutliers = 'prepost';
+options.outlierMethod = 'quartiles';
+options.preOutlierMethod = 'quartiles';
 options.showVarNames = 3;
 options.constraint = 'Joint ~= kneeHip & Stage == t1';
 options.separateMulti = 'true';
@@ -64,10 +64,8 @@ options.y = {
 % depVars = {'maxForce'};
 options.yLabel = {
     'Force'
-    'Force'
     };
 options.yUnits = {
-    'BW'
     'BW'
     };
 options.distribution = {
@@ -75,4 +73,3 @@ options.distribution = {
     };
 
 kbstat(options);
-
